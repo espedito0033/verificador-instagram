@@ -20,6 +20,7 @@ escondido precisa iniciar).
 """
 
 import base64
+import os
 import re
 import threading
 import time
@@ -320,11 +321,19 @@ async function verificar() {
 """
 
 
-def abrir_navegador():
+def abrir_navegador(porta):
     time.sleep(1.2)
-    webbrowser.open("http://127.0.0.1:5000")
+    webbrowser.open(f"http://127.0.0.1:{porta}")
 
 
 if __name__ == "__main__":
-    threading.Thread(target=abrir_navegador).start()
-    app.run(host="127.0.0.1", port=5000, debug=False)
+    # Quando hospedado (Render, Railway, etc.) a plataforma define a porta
+    # pela variavel de ambiente PORT. Localmente, roda na 5000 e abre o
+    # navegador sozinho.
+    porta = int(os.environ.get("PORT", 5000))
+    rodando_local = "PORT" not in os.environ
+
+    if rodando_local:
+        threading.Thread(target=abrir_navegador, args=(porta,)).start()
+
+    app.run(host="0.0.0.0", port=porta, debug=False)
