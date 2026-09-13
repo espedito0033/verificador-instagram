@@ -73,8 +73,12 @@ def verificar_conta(username: str) -> dict:
     url = f"https://www.instagram.com/{username}/"
 
     with _lock:
-        _iniciar_navegador()
-        page = _context.new_page()
+        try:
+            _iniciar_navegador()
+            page = _context.new_page()
+        except Exception as e:
+            return {"username": username, "status": "ERRO", "detalhe": f"falha ao iniciar navegador: {str(e)[:150]}"}
+
         try:
             resp = page.goto(url, wait_until="domcontentloaded", timeout=20000)
             # da um tempinho pra pagina assentar (meta tags, redirecionamentos)
@@ -146,12 +150,22 @@ def api_verificar():
 
     resultados = []
     for username in usernames:
-        r = verificar_conta(username)
+        try:
+            r = verificar_conta(username)
+        except Exception as e:
+            r = {"username": username, "status": "ERRO", "detalhe": str(e)[:150]}
         if r:
             resultados.append(r)
         time.sleep(1.0)
 
     return jsonify(resultados)
+
+
+@app.errorhandler(Exception)
+def erro_generico(e):
+    # Garante que QUALQUER erro nao previsto volte como JSON,
+    # nunca como pagina HTML (que quebra o fetch() do frontend)
+    return jsonify([{"status": "ERRO", "detalhe": str(e)[:200]}]), 200
 
 
 PAGINA_HTML = """
